@@ -2,107 +2,142 @@
 <html lang="sr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Mika✨</title>
   <style>
     :root {
       --bg1: #fff4fa;
       --bg2: #eaf8ff;
-      --panel: rgba(255,255,255,.78);
       --text: #463856;
-      --muted: #786f86;
-      --shadow: 0 20px 65px rgba(79,56,109,.18);
+      --shadow: 0 20px 65px rgba(79, 56, 109, .18);
     }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
     body {
+      width: 100%;
+      height: 100%;
       margin: 0;
+    }
+
+    html {
+      background: var(--bg2);
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
       overflow: hidden;
-      font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, Segoe UI, sans-serif;
+      overscroll-behavior: none;
+      font-family:
+        ui-rounded,
+        "SF Pro Rounded",
+        "Nunito",
+        system-ui,
+        -apple-system,
+        "Segoe UI",
+        sans-serif;
       color: var(--text);
       background:
         radial-gradient(circle at 18% 10%, #ffe1f0 0, transparent 34%),
         radial-gradient(circle at 82% 15%, #dff3ff 0, transparent 30%),
         linear-gradient(135deg, var(--bg1), var(--bg2));
     }
+
     .app {
       position: relative;
       width: 100%;
-      height: 100%;
+      height: 100vh;
+      height: 100dvh;
       display: grid;
       place-items: center;
-      padding: 16px;
+
+      padding-top: max(6px, env(safe-area-inset-top));
+      padding-right: max(6px, env(safe-area-inset-right));
+      padding-bottom: max(6px, env(safe-area-inset-bottom));
+      padding-left: max(6px, env(safe-area-inset-left));
     }
+
     .stage-wrap {
-      width: min(1100px, calc(100vw - 24px));
-      height: min(760px, calc(100vh - 24px));
-      min-height: 320px;
       position: relative;
-      overflow: hidden;
-      border-radius: 28px;
-      background:
-        radial-gradient(circle at 50% 0%, rgba(255,255,255,.86), transparent 42%),
-        linear-gradient(180deg, rgba(248,242,255,.9), rgba(231,246,255,.9));
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(90,72,110,.12);
-      cursor: pointer;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    canvas {
       width: 100%;
       height: 100%;
+      max-width: 1100px;
+      max-height: 760px;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid rgba(90, 72, 110, .12);
+      border-radius: clamp(14px, 3vw, 28px);
+      cursor: pointer;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      background:
+        radial-gradient(
+          circle at 50% 0%,
+          rgba(255, 255, 255, .86),
+          transparent 42%
+        ),
+        linear-gradient(
+          180deg,
+          rgba(248, 242, 255, .9),
+          rgba(231, 246, 255, .9)
+        );
+      box-shadow: var(--shadow);
+    }
+
+    canvas {
       display: block;
-      touch-action: manipulation;
+      width: 100%;
+      height: 100%;
     }
-    .topbar {
-      position: absolute;
-      top: 14px;
-      left: 14px;
-      right: 14px;
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      pointer-events: none;
+
+    /* Telefoni i manji tableti */
+    @media (max-width: 768px) {
+      .app {
+        place-items: stretch;
+      }
+
+      .stage-wrap {
+        max-width: none;
+        max-height: none;
+        border-radius: clamp(12px, 4vw, 20px);
+        box-shadow: 0 10px 32px rgba(79, 56, 109, .15);
+      }
     }
-    .pill {
-      background: var(--panel);
-      border: 1px solid rgba(90,72,110,.10);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 24px rgba(70,52,95,.10);
-      border-radius: 999px;
-      padding: 9px 13px;
-      font-size: .92rem;
-      color: var(--muted);
-      white-space: nowrap;
+
+    /* Mali telefoni */
+    @media (max-width: 420px) {
+      .app {
+        padding-top: max(4px, env(safe-area-inset-top));
+        padding-right: max(4px, env(safe-area-inset-right));
+        padding-bottom: max(4px, env(safe-area-inset-bottom));
+        padding-left: max(4px, env(safe-area-inset-left));
+      }
+
+      .stage-wrap {
+        border-radius: 13px;
+      }
     }
-    .center-tip {
-      position: absolute;
-      left: 50%;
-      bottom: 18px;
-      transform: translateX(-50%);
-      background: rgba(255,255,255,.78);
-      border: 1px solid rgba(90,72,110,.10);
-      backdrop-filter: blur(12px);
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-size: .93rem;
-      color: var(--muted);
-      pointer-events: none;
-      box-shadow: 0 8px 24px rgba(70,52,95,.10);
-      text-align: center;
-      animation: hintFade 3s ease forwards;
+
+    /* Telefon položen horizontalno */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .stage-wrap {
+        max-width: none;
+        max-height: none;
+        border-radius: 10px;
+      }
     }
-    @keyframes hintFade {
-      0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
-      15% { opacity: 1; transform: translateX(-50%) translateY(0px); }
-      80% { opacity: 1; }
-      100% { opacity: .82; }
-    }
-    @media (max-width: 720px) {
-      .topbar { flex-direction: column; align-items: flex-start; }
-      .pill { font-size: .86rem; }
-      .center-tip { font-size: .86rem; max-width: calc(100% - 24px); }
+
+    /* Smanjuje animaciju kada je to podešeno u sistemu */
+    @media (prefers-reduced-motion: reduce) {
+      .stage-wrap {
+        scroll-behavior: auto;
+      }
     }
   </style>
 </head>
@@ -143,11 +178,16 @@
 
       function fitCanvas() {
         const rect = wrap.getBoundingClientRect();
-        cssWidth = Math.max(320, rect.width);
-        cssHeight = Math.max(320, rect.height);
+
+        // Koristi stvarne dimenzije scene.
+        // Ovo sprečava sečenje animacije na telefonu u landscape položaju.
+        cssWidth = Math.max(1, Math.round(rect.width));
+        cssHeight = Math.max(1, Math.round(rect.height));
         dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width = Math.round(cssWidth * dpr);
-        canvas.height = Math.round(cssHeight * dpr);
+
+        canvas.width = Math.max(1, Math.round(cssWidth * dpr));
+        canvas.height = Math.max(1, Math.round(cssHeight * dpr));
+
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         seedStars();
       }
@@ -255,9 +295,12 @@
 
       function getBounceTransform(t) {
         const tt = t * DANCE_SPEED;
+        const shortScreen = cssHeight < 500;
+        const jumpHeight = shortScreen ? cssHeight * .035 : cssHeight * .06;
+
         return {
-          x: Math.sin(tt * 2.8) * cssWidth * .018,
-          y: -Math.abs(Math.sin(tt * 3.6)) * cssHeight * .06,
+          x: Math.sin(tt * 2.8) * Math.min(cssWidth * .018, 18),
+          y: -Math.abs(Math.sin(tt * 3.6)) * jumpHeight,
           rot: Math.sin(tt * 2.8) * .055,
           scale: 1 + Math.abs(Math.sin(tt * 3.6)) * .03,
           arm: Math.sin(tt * 4.2)
@@ -291,11 +334,17 @@
       }
 
       function drawCard(t) {
-        const baseW = Math.min(cssWidth * .40, 360);
-        const baseH = Math.min(cssHeight * .72, 500);
+        // Kartica ostaje proporcionalna i na uskim i na položenim telefonima.
+        const cardRatio = 0.72;
+        const maxCardW = Math.min(cssWidth * .78, 410);
+        const maxCardH = Math.min(cssHeight * .72, 550);
+
+        const baseW = Math.max(100, Math.min(maxCardW, maxCardH * cardRatio));
+        const baseH = baseW / cardRatio;
+
         const d = getBounceTransform(t);
         const cx = cssWidth / 2 + d.x;
-        const cy = cssHeight * .53 + d.y;
+        const cy = cssHeight * .54 + d.y;
 
         ctx.save();
         ctx.translate(cx, cy);
@@ -430,7 +479,21 @@
         burst(x, y);
       });
 
-      window.addEventListener("resize", fitCanvas);
+      let resizeFrame = 0;
+
+      function requestCanvasResize() {
+        cancelAnimationFrame(resizeFrame);
+        resizeFrame = requestAnimationFrame(fitCanvas);
+      }
+
+      window.addEventListener("resize", requestCanvasResize);
+      window.addEventListener("orientationchange", requestCanvasResize);
+
+      if ("ResizeObserver" in window) {
+        const resizeObserver = new ResizeObserver(requestCanvasResize);
+        resizeObserver.observe(wrap);
+      }
+
       fitCanvas();
 
       for (let i = 0; i < 24; i++) {
