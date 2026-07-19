@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mika✨</title>
+  <style>
+    :root {
+      --bg1: #fff4fa;
+      --bg2: #eaf8ff;
+      --panel: rgba(255,255,255,.78);
+      --text: #463856;
+      --muted: #786f86;
+      --shadow: 0 20px 65px rgba(79,56,109,.18);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, Segoe UI, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 10%, #ffe1f0 0, transparent 34%),
+        radial-gradient(circle at 82% 15%, #dff3ff 0, transparent 30%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+    }
+    .app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+    .stage-wrap {
+      width: min(1100px, calc(100vw - 24px));
+      height: min(760px, calc(100vh - 24px));
+      min-height: 320px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,.86), transparent 42%),
+        linear-gradient(180deg, rgba(248,242,255,.9), rgba(231,246,255,.9));
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(90,72,110,.12);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: manipulation;
+    }
+    .topbar {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .pill {
+      background: var(--panel);
+      border: 1px solid rgba(90,72,110,.10);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 24px rgba(70,52,95,.10);
+      border-radius: 999px;
+      padding: 9px 13px;
+      font-size: .92rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .center-tip {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,.78);
+      border: 1px solid rgba(90,72,110,.10);
+      backdrop-filter: blur(12px);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: .93rem;
+      color: var(--muted);
+      pointer-events: none;
+      box-shadow: 0 8px 24px rgba(70,52,95,.10);
+      text-align: center;
+      animation: hintFade 3s ease forwards;
+    }
+    @keyframes hintFade {
+      0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+      15% { opacity: 1; transform: translateX(-50%) translateY(0px); }
+      80% { opacity: 1; }
+      100% { opacity: .82; }
+    }
+    @media (max-width: 720px) {
+      .topbar { flex-direction: column; align-items: flex-start; }
+      .pill { font-size: .86rem; }
+      .center-tip { font-size: .86rem; max-width: calc(100% - 24px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="stage-wrap" id="stageWrap" title="Klikni po sceni">
+      <canvas id="stage" width="1280" height="880" aria-label="Animirana slideshow scena"></canvas>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const IMAGE_PATHS = ["images/slika-01.jpg", "images/slika-02.jpg", "images/slika-03.jpg", "images/slika-04.jpg", "images/slika-05.jpg", "images/slika-06.jpg", "images/slika-07.jpg", "images/slika-08.jpg", "images/slika-09.jpg", "images/slika-10.jpg"];
+      const CHANGE_EVERY_MS = 5000;
+      const DANCE_SPEED = 1.18;
+      const DECOR_AMOUNT = 42;
+
+      const canvas = document.getElementById("stage");
+      const wrap = document.getElementById("stageWrap");
+      const ctx = canvas.getContext("2d");
+
+      let cssWidth = 1200;
+      let cssHeight = 760;
+      let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      let photos = [];
+      let currentIndex = 0;
+      let lastSwitch = performance.now();
+      let startTime = performance.now();
+      let lastFrame = performance.now();
+
+      let particles = [];
+      let stars = [];
+
+      const palette = ["#ff7eb3", "#ffd166", "#8ecae6", "#cdb4db", "#a8dadc", "#f7a072"];
+
+      function fitCanvas() {
+        const rect = wrap.getBoundingClientRect();
+        cssWidth = Math.max(320, rect.width);
+        cssHeight = Math.max(320, rect.height);
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(cssWidth * dpr);
+        canvas.height = Math.round(cssHeight * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        seedStars();
+      }
+
+      function seedStars() {
+        const count = Math.max(28, Math.round(cssWidth / 22));
+        stars = Array.from({ length: count }, () => ({
+          x: Math.random() * cssWidth,
+          y: Math.random() * cssHeight * 0.72,
+          r: 1 + Math.random() * 2.4,
+          phase: Math.random() * Math.PI * 2
+        }));
+      }
+
+      function roundedRectPath(x, y, w, h, r) {
+        const rr = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + rr, y);
+        ctx.arcTo(x + w, y, x + w, y + h, rr);
+        ctx.arcTo(x + w, y + h, x, y + h, rr);
+        ctx.arcTo(x, y + h, x, y, rr);
+        ctx.arcTo(x, y, x + w, y, rr);
+        ctx.closePath();
+      }
+
+      function drawHeart(x, y, size, rotation, alpha, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        ctx.scale(size / 20, size / 20);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(0, 7);
+        ctx.bezierCurveTo(-18, -5, -10, -18, 0, -9);
+        ctx.bezierCurveTo(10, -18, 18, -5, 0, 7);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawStar(x, y, radius, rotation, alpha, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const r = i % 2 === 0 ? radius : radius * 0.45;
+          const a = -Math.PI / 2 + i * Math.PI / 5;
+          const px = Math.cos(a) * r;
+          const py = Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function spawnParticle(x, y, burst = false) {
+        const kind = Math.random() > 0.45 ? "heart" : "star";
+        const angle = burst ? Math.random() * Math.PI * 2 : -Math.PI / 2 + (Math.random() - .5) * .7;
+        const speed = burst ? 65 + Math.random() * 160 : 24 + Math.random() * 48;
+        particles.push({
+          kind, x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          gravity: 24,
+          size: 10 + Math.random() * 15,
+          life: 1,
+          decay: burst ? .55 + Math.random() * .45 : .28 + Math.random() * .24,
+          rotation: Math.random() * Math.PI * 2,
+          spin: (Math.random() - .5) * 2.4,
+          color: palette[Math.floor(Math.random() * palette.length)]
+        });
+      }
+
+      function burst(x = cssWidth / 2, y = cssHeight / 2) {
+        for (let i = 0; i < 28; i++) spawnParticle(x, y, true);
+      }
+
+      function drawBackground(t) {
+        const g = ctx.createLinearGradient(0, 0, 0, cssHeight);
+        g.addColorStop(0, "#fbf3ff");
+        g.addColorStop(1, "#e8f7ff");
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+        for (const s of stars) {
+          const twinkle = .28 + .72 * (Math.sin(t * 2 + s.phase) * .5 + .5);
+          ctx.fillStyle = `rgba(255,255,255,${twinkle})`;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        const floorY = cssHeight * .84;
+        const fg = ctx.createRadialGradient(cssWidth / 2, floorY, 10, cssWidth / 2, floorY, cssWidth * .46);
+        fg.addColorStop(0, "rgba(255,255,255,.78)");
+        fg.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = fg;
+        ctx.fillRect(0, floorY - 90, cssWidth, 180);
+      }
+
+      function getBounceTransform(t) {
+        const tt = t * DANCE_SPEED;
+        return {
+          x: Math.sin(tt * 2.8) * cssWidth * .018,
+          y: -Math.abs(Math.sin(tt * 3.6)) * cssHeight * .06,
+          rot: Math.sin(tt * 2.8) * .055,
+          scale: 1 + Math.abs(Math.sin(tt * 3.6)) * .03,
+          arm: Math.sin(tt * 4.2)
+        };
+      }
+
+      function drawArm(side, cardW, cardH, armWave, t) {
+        const dir = side === "left" ? -1 : 1;
+        const shoulderX = dir * cardW * .47;
+        const shoulderY = -cardH * .12;
+        const wave = armWave * dir;
+        const elbowX = shoulderX + dir * cardW * .17;
+        const elbowY = shoulderY + cardH * (.05 + .04 * Math.cos(t * 3));
+        const handX = elbowX + dir * cardW * (.1 + .04 * Math.abs(wave));
+        const handY = elbowY - cardH * (.10 + .07 * wave);
+
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#ffd8bf";
+        ctx.lineWidth = Math.max(10, cardW * .045);
+        ctx.beginPath();
+        ctx.moveTo(shoulderX, shoulderY);
+        ctx.quadraticCurveTo(elbowX, elbowY, handX, handY);
+        ctx.stroke();
+        ctx.fillStyle = "#ffd8bf";
+        ctx.beginPath();
+        ctx.arc(handX, handY, Math.max(7, cardW * .027), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawCard(t) {
+        const baseW = Math.min(cssWidth * .40, 360);
+        const baseH = Math.min(cssHeight * .72, 500);
+        const d = getBounceTransform(t);
+        const cx = cssWidth / 2 + d.x;
+        const cy = cssHeight * .53 + d.y;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(d.rot);
+        ctx.scale(d.scale, d.scale);
+
+        drawArm("left", baseW, baseH, d.arm, t);
+        drawArm("right", baseW, baseH, d.arm, t + Math.PI);
+
+        ctx.save();
+        ctx.translate(0, baseH * .50);
+        ctx.scale(1, .3);
+        const shadow = ctx.createRadialGradient(0, 0, 4, 0, 0, baseW * .56);
+        shadow.addColorStop(0, "rgba(73,52,90,.22)");
+        shadow.addColorStop(1, "rgba(73,52,90,0)");
+        ctx.fillStyle = shadow;
+        ctx.beginPath();
+        ctx.arc(0, 0, baseW * .56, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        const x = -baseW / 2;
+        const y = -baseH / 2;
+
+        ctx.save();
+        ctx.shadowColor = "rgba(66,44,86,.25)";
+        ctx.shadowBlur = 28;
+        ctx.shadowOffsetY = 16;
+        roundedRectPath(x, y, baseW, baseH, 32);
+        ctx.fillStyle = "rgba(255,255,255,.97)";
+        ctx.fill();
+        ctx.restore();
+
+        roundedRectPath(x + 8, y + 8, baseW - 16, baseH - 16, 26);
+        ctx.save();
+        ctx.clip();
+
+        const photo = photos[currentIndex];
+        if (photo) {
+          const iw = photo.naturalWidth || photo.width;
+          const ih = photo.naturalHeight || photo.height;
+          const targetW = baseW - 16;
+          const targetH = baseH - 16;
+          const scale = Math.max(targetW / iw, targetH / ih);
+          const sw = targetW / scale;
+          const sh = targetH / scale;
+          const sx = Math.max(0, (iw - sw) / 2);
+          const sy = Math.max(0, (ih - sh) / 2);
+          ctx.drawImage(photo, sx, sy, sw, sh, x + 8, y + 8, targetW, targetH);
+
+          const overlay = ctx.createLinearGradient(0, y, 0, y + baseH);
+          overlay.addColorStop(0, "rgba(255,255,255,.02)");
+          overlay.addColorStop(1, "rgba(250,173,210,.08)");
+          ctx.fillStyle = overlay;
+          ctx.fillRect(x + 8, y + 8, targetW, targetH);
+        }
+        ctx.restore();
+
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = "rgba(255,255,255,.9)";
+        roundedRectPath(x + 8, y + 8, baseW - 16, baseH - 16, 26);
+        ctx.stroke();
+
+        drawHeart(0, y - 20, 24, Math.sin(t * 2) * .08, .95, "#ff7eb3");
+        ctx.restore();
+
+        return { x: cx, y: cy, w: baseW, h: baseH };
+      }
+
+      function updateParticles(dt) {
+        for (const p of particles) {
+          p.vy += p.gravity * dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.rotation += p.spin * dt;
+          p.life -= p.decay * dt;
+
+          if (p.kind === "heart") drawHeart(p.x, p.y, p.size, p.rotation, Math.max(0, p.life), p.color);
+          else drawStar(p.x, p.y, p.size, p.rotation, Math.max(0, p.life), p.color);
+        }
+        particles = particles.filter(p => p.life > 0 && p.x > -80 && p.x < cssWidth + 80 && p.y > -100 && p.y < cssHeight + 100);
+      }
+
+      function maybeAmbientDecor(dt, card) {
+        const rate = DECOR_AMOUNT / 6;
+        if (Math.random() < rate * dt) {
+          const side = Math.random() > .5 ? 1 : -1;
+          spawnParticle(
+            card.x + side * (card.w * (.55 + Math.random() * .38)),
+            card.y + (Math.random() - .55) * card.h * .72,
+            false
+          );
+        }
+      }
+
+      function switchPhoto(now) {
+        if (photos.length <= 1) return;
+        if (now - lastSwitch >= CHANGE_EVERY_MS) {
+          currentIndex = (currentIndex + 1) % photos.length;
+          lastSwitch = now;
+          burst(cssWidth / 2, cssHeight * .36);
+        }
+      }
+
+      function animate(now) {
+        const dt = Math.min(.04, (now - lastFrame) / 1000);
+        lastFrame = now;
+        const t = (now - startTime) / 1000;
+
+        switchPhoto(now);
+        drawBackground(t);
+        const card = drawCard(t);
+        maybeAmbientDecor(dt, card);
+        updateParticles(dt);
+
+        requestAnimationFrame(animate);
+      }
+
+      function loadImages(paths) {
+        return Promise.all(paths.map(src => new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        })));
+      }
+
+      wrap.addEventListener("pointerdown", (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width * cssWidth;
+        const y = (event.clientY - rect.top) / rect.height * cssHeight;
+        burst(x, y);
+      });
+
+      window.addEventListener("resize", fitCanvas);
+      fitCanvas();
+
+      for (let i = 0; i < 24; i++) {
+        spawnParticle(cssWidth * (.15 + Math.random() * .7), cssHeight * (.18 + Math.random() * .62), true);
+      }
+
+      loadImages(IMAGE_PATHS).then(list => {
+        photos = list;
+        startTime = performance.now();
+        lastSwitch = performance.now();
+        requestAnimationFrame(animate);
+      }).catch(err => {
+        console.error(err);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, cssWidth, cssHeight);
+        ctx.fillStyle = "#55486b";
+        ctx.font = "700 26px system-ui";
+        ctx.fillText("Greška pri učitavanju slika.", 40, 70);
+      });
+    })();
+  </script>
+</body>
+</html>
